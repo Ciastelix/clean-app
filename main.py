@@ -1,9 +1,9 @@
-from collections import Counter
+from collections import defaultdict
 from pathlib import Path
 
 import xxhash
 
-files = Counter()
+files = defaultdict(list)
 
 
 def hash_file_xxhash(file_path):
@@ -11,27 +11,26 @@ def hash_file_xxhash(file_path):
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
-    files[str(h.hexdigest())] += 1
+    return h.hexdigest()
 
 
 def scan_for_files():
-    pathlist = Path("/")
-    for p in pathlist.glob("*"):
-        for i in p.rglob("*"):
-            try:
-                if i.is_file():
-                    hash_file_xxhash(i)
-            except PermissionError:
-                print("perm den")
-                continue
-            except OSError:
-                print("sys error")
-                continue
+    start_path = Path.home()
+
+    for i in start_path.rglob("*"):
+        try:
+            if i.is_file() and i.stat().st_size > 0:
+                file_hash = hash_file_xxhash(i)
+                files[file_hash].append(str(i))
+
+        except PermissionError:
+            continue
+        except OSError:
+            continue
 
 
 def main():
     scan_for_files()
-    print(files.most_common(5))
 
 
 if __name__ == "__main__":
