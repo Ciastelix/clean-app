@@ -31,6 +31,13 @@ def scan_for_files():
 
 def main():
     scan_for_files()
+    duplicates = {h: paths for h, paths in files.items() if len(paths) > 1}
+    for file_list in duplicates.values():
+        for path_to_remove in file_list[1:]:
+            try:
+                Path(path_to_remove).unlink()
+            except OSError as e:
+                print(f"{path_to_remove}: {e}")
 
 
 if __name__ == "__main__":
