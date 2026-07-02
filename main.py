@@ -1,6 +1,7 @@
 from collections import defaultdict
 from pathlib import Path
 
+import flet as ft
 import xxhash
 
 files = defaultdict(list)
@@ -14,7 +15,7 @@ def hash_file_xxhash(file_path):
     return h.hexdigest()
 
 
-def scan_for_files():
+def scan_for_files(files):
     start_path = Path.home()
 
     for i in start_path.rglob("*"):
@@ -27,10 +28,10 @@ def scan_for_files():
             continue
         except OSError:
             continue
+    return files
 
 
-def main():
-    scan_for_files()
+def remove_duplicates(files):
     duplicates = {h: paths for h, paths in files.items() if len(paths) > 1}
     for file_list in duplicates.values():
         for path_to_remove in file_list[1:]:
@@ -38,6 +39,23 @@ def main():
                 Path(path_to_remove).unlink()
             except OSError as e:
                 print(f"{path_to_remove}: {e}")
+
+
+def ui(page: ft.Page):
+    page.title = "Clean App"
+
+    def button_clicked():
+        print("started scanning")
+        files = scan_for_files(files)
+        print(files)
+
+    page.add(ft.Button("Start Scanning", on_click=button_clicked))
+
+
+def main():
+
+    ft.run(ui)
+    remove_duplicates(files)
 
 
 if __name__ == "__main__":
