@@ -44,7 +44,10 @@ def remove_duplicates(files):
 def ui(page: ft.Page):
     page.title = "Clean App"
 
-    def button_clicked():
+    files = defaultdict(list)
+
+    def button_clicked(e):
+        nonlocal files
         print("started scanning")
         files = scan_for_files(files)
         print(files)
