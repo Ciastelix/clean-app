@@ -1,10 +1,9 @@
+import threading
 from collections import defaultdict
 from pathlib import Path
 
 import flet as ft
 import xxhash
-
-files = defaultdict(list)
 
 
 def hash_file_xxhash(file_path):
@@ -13,22 +12,6 @@ def hash_file_xxhash(file_path):
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
     return h.hexdigest()
-
-
-def scan_for_files(files):
-    start_path = Path.home()
-
-    for i in start_path.rglob("*"):
-        try:
-            if i.is_file() and i.stat().st_size > 0:
-                file_hash = hash_file_xxhash(i)
-                files[file_hash].append(str(i))
-
-        except PermissionError:
-            continue
-        except OSError:
-            continue
-    return files
 
 
 def remove_duplicates(files):
@@ -41,24 +24,69 @@ def remove_duplicates(files):
                 print(f"{path_to_remove}: {e}")
 
 
+def scan_for_files(files_dict):
+    start_path = Path.home()
+    for i in start_path.rglob("*"):
+        try:
+            if i.is_file() and i.stat().st_size > 0:
+                file_hash = hash_file_xxhash(i)
+                files_dict[file_hash].append(str(i))
+        except (PermissionError, OSError):
+            continue
+    return files_dict
+
+
 def ui(page: ft.Page):
     page.title = "Clean App"
+    page.vertical_alignment = ft.MainAxisAlignment.CENTER
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
     files = defaultdict(list)
 
-    def button_clicked(e):
-        nonlocal files
-        print("started scanning")
-        files = scan_for_files(files)
-        print(files)
+    loading_spinner = ft.ProgressRing(visible=False)
+    start_button = ft.Button("Start Scanning")
 
-    page.add(ft.Button("Start Scanning", on_click=button_clicked))
+    def on_scan_complete():
+        duplicates = {h: p for h, p in files.items() if len(p) > 1}
+        dup_count = sum(len(v) - 1 for v in duplicates.values())
+
+        start_button.visible = True
+        start_button.disabled = False
+        start_button.text = f"Znaleziono {dup_count} duplikatów"
+
+        loading_spinner.visible = False
+
+        page.update()
+
+    def do_scan():
+        nonlocal files
+        files = scan_for_files(files)
+        page.run_thread(on_scan_complete)
+
+    def button_clicked(e):
+        start_button.visible = False
+        loading_spinner.visible = True
+        page.update()
+        t = threading.Thread(target=do_scan, daemon=True)
+        t.start()
+
+    start_button.on_click = button_clicked
+
+    page.add(
+        ft.Container(
+            content=ft.Column(
+                [start_button, loading_spinner],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=20,
+            ),
+            alignment=ft.Alignment(0, 0),
+            expand=True,
+        )
+    )
 
 
 def main():
-
     ft.run(ui)
-    remove_duplicates(files)
 
 
 if __name__ == "__main__":
