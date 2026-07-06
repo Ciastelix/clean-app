@@ -79,9 +79,9 @@ def ui(page: ft.Page):
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=20,
             ),
-            alignment=ft.Alignment(0, 0),
+            alignment=ft.Alignment.CENTER,
             expand=True,
-        )
+        ),
     )
 
 
