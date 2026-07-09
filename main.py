@@ -1,3 +1,4 @@
+import asyncio
 import threading
 from collections import defaultdict
 from pathlib import Path
@@ -46,29 +47,46 @@ def ui(page: ft.Page):
     loading_spinner = ft.ProgressRing(visible=False)
     start_button = ft.Button("Start Scanning")
 
+    def close_dialog(e):
+        dlg.open = False
+        page.update()
+
+    dlg = ft.AlertDialog(
+        modal=True,
+        title=ft.Text("Scan Complete"),
+        content=ft.Text("Scanning finished."),
+        actions=[
+            ft.TextButton("OK", on_click=close_dialog),
+        ],
+        actions_alignment=ft.MainAxisAlignment.CENTER,
+    )
+
     def on_scan_complete():
         duplicates = {h: p for h, p in files.items() if len(p) > 1}
         dup_count = sum(len(v) - 1 for v in duplicates.values())
 
         start_button.visible = True
         start_button.disabled = False
-        start_button.text = f"Znaleziono {dup_count} duplikatów"
+        start_button.text = "Start Scanning"
 
         loading_spinner.visible = False
 
+        dlg.content = ft.Text(f"Found {dup_count} duplicate(s).")
+        page.dialog = dlg
+        dlg.open = True
         page.update()
 
-    def do_scan():
+    async def do_scan_async():
         nonlocal files
-        files = scan_for_files(files)
-        page.run_thread(on_scan_complete)
+        loop = asyncio.get_event_loop()
+        files = await loop.run_in_executor(None, scan_for_files, files)
+        on_scan_complete()
 
     def button_clicked(e):
         start_button.visible = False
         loading_spinner.visible = True
         page.update()
-        t = threading.Thread(target=do_scan, daemon=True)
-        t.start()
+        page.run_task(do_scan_async)
 
     start_button.on_click = button_clicked
 
@@ -79,7 +97,7 @@ def ui(page: ft.Page):
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=20,
             ),
-            alignment=ft.Alignment.CENTER,
+            alignment=ft.Alignment(0, 0),
             expand=True,
         ),
     )
