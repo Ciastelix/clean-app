@@ -1,8 +1,6 @@
 import asyncio
-import threading
 from collections import defaultdict
 from pathlib import Path
-
 import flet as ft
 import xxhash
 
@@ -14,7 +12,6 @@ def hash_file_xxhash(file_path):
             h.update(chunk)
     return h.hexdigest()
 
-
 def remove_duplicates(files):
     duplicates = {h: paths for h, paths in files.items() if len(paths) > 1}
     for file_list in duplicates.values():
@@ -23,7 +20,6 @@ def remove_duplicates(files):
                 Path(path_to_remove).unlink()
             except OSError as e:
                 print(f"{path_to_remove}: {e}")
-
 
 def scan_for_files(files_dict):
     start_path = Path.home()
@@ -41,9 +37,9 @@ def ui(page: ft.Page):
     page.title = "Clean App"
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.padding = 0
 
     files = defaultdict(list)
-
     loading_spinner = ft.ProgressRing(visible=False)
     start_button = ft.Button("Start Scanning")
 
@@ -60,19 +56,16 @@ def ui(page: ft.Page):
         ],
         actions_alignment=ft.MainAxisAlignment.CENTER,
     )
+    page.overlay.append(dlg)
 
     def on_scan_complete():
         duplicates = {h: p for h, p in files.items() if len(p) > 1}
         dup_count = sum(len(v) - 1 for v in duplicates.values())
-
         start_button.visible = True
         start_button.disabled = False
         start_button.text = "Start Scanning"
-
         loading_spinner.visible = False
-
         dlg.content = ft.Text(f"Found {dup_count} duplicate(s).")
-        page.dialog = dlg
         dlg.open = True
         page.update()
 
@@ -91,17 +84,14 @@ def ui(page: ft.Page):
     start_button.on_click = button_clicked
 
     page.add(
-        ft.Container(
-            content=ft.Column(
-                [start_button, loading_spinner],
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=20,
-            ),
-            alignment=ft.Alignment(0, 0),
+        ft.Column(
+            [start_button, loading_spinner],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            alignment=ft.MainAxisAlignment.CENTER,
+            spacing=20,
             expand=True,
-        ),
+        )
     )
-
 
 def main():
     ft.run(ui)
