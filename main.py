@@ -65,7 +65,34 @@ def ui(page: ft.Page):
         start_button.disabled = False
         start_button.text = "Start Scanning"
         loading_spinner.visible = False
-        dlg.content = ft.Text(f"Found {dup_count} duplicate(s).")
+
+        if dup_count == 0:
+            dlg.content = ft.Text("No duplicates found.")
+        else:
+            rows = []
+            for file_hash, paths in duplicates.items():
+                rows.append(
+                    ft.Text(
+                        f"Original: {paths[0]}",
+                        weight=ft.FontWeight.BOLD,
+                        size=12,
+                    )
+                )
+                for dup_path in paths[1:]:
+                    rows.append(ft.Text(f"  Duplicate: {dup_path}", size=12))
+                rows.append(ft.Divider())
+
+            dlg.content = ft.Container(
+                content=ft.Column(
+                    rows,
+                    scroll=ft.ScrollMode.AUTO,
+                    spacing=4,
+                ),
+                width=500,
+                height=400,
+            )
+
+        dlg.title = ft.Text(f"Found {dup_count} duplicate(s)")
         dlg.open = True
         page.update()
 
