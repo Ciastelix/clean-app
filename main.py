@@ -38,7 +38,6 @@ def ui(page: ft.Page):
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     page.padding = 0
-
     files = defaultdict(list)
     loading_spinner = ft.ProgressRing(visible=False)
     start_button = ft.Button("Start Scanning")
@@ -52,7 +51,8 @@ def ui(page: ft.Page):
         title=ft.Text("Scan Complete"),
         content=ft.Text("Scanning finished."),
         actions=[
-            ft.TextButton("OK", on_click=close_dialog),
+            ft.TextButton("Delete Duplicates"),
+            ft.TextButton("Close", on_click=close_dialog),
         ],
         actions_alignment=ft.MainAxisAlignment.CENTER,
     )
